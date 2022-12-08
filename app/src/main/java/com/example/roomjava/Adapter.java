@@ -2,6 +2,7 @@ package com.example.roomjava;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -17,19 +18,26 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ConcurrentModificationException;
 import java.util.List;
 
 public class Adapter extends RecyclerView.Adapter<Adapter.ViewHolder> {
 
     List<MainData> dataList;
-    private Activity context;
+    private Context context;
     private RoomDB database;
     InterfaceAdapter interfaceAdapter;
 
-    public Adapter(Activity context, List<MainData> dataList, InterfaceAdapter interfaceAdapter) {
+    public Adapter(Context context, List<MainData> dataList, InterfaceAdapter interfaceAdapter) {
         this.context = context;
         this.dataList = dataList;
         this.interfaceAdapter = interfaceAdapter;
+        notifyDataSetChanged();
+    }
+
+    public Adapter(Context context, List<MainData> dataList) {
+        this.context = context;
+        this.dataList = dataList;
         notifyDataSetChanged();
     }
 

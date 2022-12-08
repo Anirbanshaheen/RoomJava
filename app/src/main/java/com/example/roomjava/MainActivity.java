@@ -3,6 +3,9 @@ package com.example.roomjava;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
@@ -21,7 +24,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements Adapter.InterfaceAdapter {
+public class MainActivity extends AppCompatActivity  { //implements Adapter.InterfaceAdapter
 
     EditText editText;
     Button btAdd, btReset;
@@ -49,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.Interface
         linearLayoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(linearLayoutManager);
 
-        adapter = new Adapter(MainActivity.this, dataList, this);
+        adapter = new Adapter(MainActivity.this, dataList);
         recyclerView.setAdapter(adapter);
 
         isInternetConnected();
@@ -86,8 +89,20 @@ public class MainActivity extends AppCompatActivity implements Adapter.Interface
         if (cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getState() == NetworkInfo.State.CONNECTED || cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI).getState() == NetworkInfo.State.CONNECTED) {
             internetConnection = true;
 
-            AsyncTaskRunner runner = new AsyncTaskRunner();
-            runner.execute();
+            WorkManager mWorkManager = WorkManager.getInstance();
+            OneTimeWorkRequest oneTimeWorkRequest = new OneTimeWorkRequest.Builder(OperationWorker.class).build();
+
+            mWorkManager.enqueue(oneTimeWorkRequest);
+
+            mWorkManager.getWorkInfoByIdLiveData(oneTimeWorkRequest.getId()).observe(MainActivity.this, workInfo -> {
+                if (workInfo != null) {
+                    WorkInfo.State state = workInfo.getState();
+                    Log.d("radium", ""+state);
+                }
+            });
+
+            /*AsyncTaskRunner runner = new AsyncTaskRunner();
+            runner.execute();*/
 
             /*Runnable runnable = new Runnable() {
                 @Override
@@ -165,22 +180,21 @@ public class MainActivity extends AppCompatActivity implements Adapter.Interface
         }
     }
 
-    @Override
+    /*@Override
     public void observeDataInterface(MainData mainData) {
         Log.d("data", "data call back " + mainData.getText());
         database.mainDao().delete(mainData);
         if (dataList.size() > 0) {
             removeRoomData(dataList.get(0));
         }
-    }
+    }*/
 
     private class AsyncTaskRunner extends AsyncTask<MainData, MainData, MainData> {
 
         @Override
         protected MainData doInBackground(MainData... params) {
-            //MainData data = null;
             if (dataList.size() > 0) {
-                removeRoomData(dataList.get(0));
+                //removeRoomData(dataList.get(0));
             }
             return null;
         }
@@ -188,29 +202,6 @@ public class MainActivity extends AppCompatActivity implements Adapter.Interface
         @Override
         protected void onPostExecute(MainData result) {
 
-     /*       if (result!=null){
-                MainActivity.this.runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    database.mainDao().delete(result);
-
-                    adapter.dataList.remove(result);
-                    adapter.notifyItemRemoved(adapter.dataList.indexOf(result));
-                    //adapter.notifyItemRangeChanged(adapter.dataList.indexOf(data), adapter.dataList.size());
-                }
-            });
-            }*/
-
-            /*MainActivity.this.runOnUiThread(new Runnable() {
-
-                @Override
-                public void run() {
-                    adapter.dataList.remove(result);
-                    adapter.notifyItemRemoved(adapter.dataList.indexOf(result));
-                    //adapter.notifyItemRangeChanged(adapter.dataList.indexOf(data), adapter.dataList.size());
-                }
-            });*/
         }
 
         @Override
@@ -226,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements Adapter.Interface
 
     private void removeRoomData(MainData result) {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            Log.d("data", "remove done  = " + result.getText());
+            //Log.d("data", "remove done  = " + result.getText());
             adapter.removeSingleItem(result, adapter.dataList.indexOf(result)); //
         }, 2000);
 
