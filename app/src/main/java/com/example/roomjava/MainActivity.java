@@ -7,10 +7,13 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -35,6 +38,7 @@ public class MainActivity extends AppCompatActivity  { //implements Adapter.Inte
     RoomDB database;
     Adapter adapter;
     boolean internetConnection = false;
+    BroadcastReceiver broadcastReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +58,9 @@ public class MainActivity extends AppCompatActivity  { //implements Adapter.Inte
 
         adapter = new Adapter(MainActivity.this, dataList);
         recyclerView.setAdapter(adapter);
+
+        broadcastReceiver = new NetworkChangeReceiver();
+        registerNetworkBroadcastReceiver();
 
         isInternetConnected();
 
@@ -81,6 +88,29 @@ public class MainActivity extends AppCompatActivity  { //implements Adapter.Inte
             dataList.addAll(database.mainDao().getAll());
             adapter.notifyDataSetChanged();
         });
+    }
+
+    protected void registerNetworkBroadcastReceiver() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            registerReceiver(broadcastReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
+            registerReceiver(broadcastReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        }
+    }
+
+    protected void unregisteredNetwork() {
+        try {
+            unregisterReceiver(broadcastReceiver);
+        }catch (IllegalArgumentException e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisteredNetwork();
     }
 
     private void isInternetConnected() {
